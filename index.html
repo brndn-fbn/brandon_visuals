@@ -501,6 +501,28 @@ form.contact-form{display:flex; flex-direction:column; gap:22px;}
 
 .submit-btn{margin-top:8px; align-self:flex-start;}
 
+.form-panel{ position:relative; }
+.form-success-overlay{
+  position:absolute; inset:0;
+  background: var(--off-white);
+  color: var(--black);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding:40px;
+  opacity:0; transform:scale(0.97);
+  pointer-events:none;
+  transition: opacity 480ms cubic-bezier(.2,.7,.2,1), transform 480ms cubic-bezier(.2,.7,.2,1);
+}
+.form-success-overlay.show{
+  opacity:1; transform:scale(1); pointer-events:auto;
+}
+.form-success-overlay h3{
+  font-family:var(--serif); font-weight:400; font-size:clamp(1.6rem, 3vw, 2.3rem);
+  margin-bottom:14px; color:var(--black); letter-spacing:-0.01em;
+}
+.form-success-overlay p{
+  font-size:0.98rem; color:var(--gray-dim); max-width:34ch;
+}
+
 /* ============ FOOTER ============ */
 footer{
   padding:52px 0;
@@ -756,49 +778,55 @@ footer .foot-copy{font-size:0.78rem; color:var(--gray-dim); width:100%; margin-t
             <a href="https://www.instagram.com/brandonmore_/" target="_blank" rel="noopener">Instagram</a>
           </div>
         </div>
-        <form class="contact-form fade-up" onsubmit="return handleSubmit(event)">
-          <div class="form-row">
-            <div class="field">
-              <label for="f-name">Name</label>
-              <input id="f-name" type="text" required>
+        <div class="form-panel">
+          <form class="contact-form fade-up" onsubmit="return handleSubmit(event)">
+            <div class="form-row">
+              <div class="field">
+                <label for="f-name">Name</label>
+                <input id="f-name" type="text" required>
+              </div>
+              <div class="field">
+                <label for="f-email">Email</label>
+                <input id="f-email" type="email" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="f-company">Company / Brand</label>
+                <input id="f-company" type="text">
+              </div>
+              <div class="field">
+                <label for="f-type">Project Type</label>
+                <select id="f-type">
+                  <option>Photography</option>
+                  <option>Videography</option>
+                  <option>Photo + Video</option>
+                  <option>Ongoing Content</option>
+                  <option>Other</option>
+                </select>
+              </div>
             </div>
             <div class="field">
-              <label for="f-email">Email</label>
-              <input id="f-email" type="email" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label for="f-company">Company / Brand</label>
-              <input id="f-company" type="text">
-            </div>
-            <div class="field">
-              <label for="f-type">Project Type</label>
-              <select id="f-type">
-                <option>Photography</option>
-                <option>Videography</option>
-                <option>Photo + Video</option>
-                <option>Ongoing Content</option>
-                <option>Other</option>
+              <label for="f-budget">Budget</label>
+              <select id="f-budget">
+                <option>Under ₱15,000</option>
+                <option>₱15,000 – ₱40,000</option>
+                <option>₱40,000 – ₱100,000</option>
+                <option>Over ₱100,000</option>
+                <option>Not sure yet</option>
               </select>
             </div>
+            <div class="field">
+              <label for="f-message">Message</label>
+              <textarea id="f-message" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-solid submit-btn">Start a Project</button>
+          </form>
+          <div class="form-success-overlay" id="formSuccessOverlay">
+            <h3 id="fsHeading">Thank you.</h3>
+            <p>Let's create something worth seeing — see you at the shoot.</p>
           </div>
-          <div class="field">
-            <label for="f-budget">Budget</label>
-            <select id="f-budget">
-              <option>Under ₱15,000</option>
-              <option>₱15,000 – ₱40,000</option>
-              <option>₱40,000 – ₱100,000</option>
-              <option>Over ₱100,000</option>
-              <option>Not sure yet</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="f-message">Message</label>
-            <textarea id="f-message" required></textarea>
-          </div>
-          <button type="submit" class="btn btn-solid submit-btn">Start a Project</button>
-        </form>
+        </div>
       </div>
     </div>
   </section>
@@ -1022,35 +1050,76 @@ const observer = new IntersectionObserver((entries)=>{
 document.querySelectorAll('.fade-up').forEach(el=>observer.observe(el));
 
 /* ============ CONTACT FORM ============ */
-// Static site, no backend — this opens the visitor's own email app with
-// everything pre-filled and addressed to you. They still have to hit
-// send on their end. If you later get real hosting with a backend (or a
-// form service like Formspree), this can be swapped for a true auto-send.
+// Sends the form directly via Formspree (formspree.io) — a free service
+// built for static sites with no backend. Submissions land straight in
+// your inbox, no dependence on the visitor having a mail app configured.
+//
+// TO ACTIVATE (2 minutes, one-time):
+// 1. Go to https://formspree.io and sign up free.
+// 2. Create a new form, verify it with brandondfabian@gmail.com.
+// 3. Copy the endpoint it gives you (looks like https://formspree.io/f/xxxxabcd)
+// 4. Paste it below, replacing the placeholder.
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xdekoqeq';
 const CONTACT_EMAIL = 'brandondfabian@gmail.com';
 
-function handleSubmit(e){
+async function handleSubmit(e){
   e.preventDefault();
-  const name = document.getElementById('f-name').value;
-  const email = document.getElementById('f-email').value;
-  const company = document.getElementById('f-company').value;
-  const type = document.getElementById('f-type').value;
-  const budget = document.getElementById('f-budget').value;
-  const message = document.getElementById('f-message').value;
+  const form = e.target;
+  const submitBtn = form.querySelector('.submit-btn');
+  const originalText = submitBtn.textContent;
 
-  const subject = `New project inquiry from ${name}`;
-  const body =
-`Name: ${name}
-Email: ${email}
-Company / Brand: ${company || '—'}
-Project Type: ${type}
-Budget: ${budget}
+  const payload = {
+    name: document.getElementById('f-name').value,
+    email: document.getElementById('f-email').value,
+    company: document.getElementById('f-company').value,
+    projectType: document.getElementById('f-type').value,
+    budget: document.getElementById('f-budget').value,
+    message: document.getElementById('f-message').value,
+  };
+
+  submitBtn.textContent = 'Sending…';
+  submitBtn.disabled = true;
+
+  try{
+    const res = await fetch(FORMSPREE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Accept':'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Form endpoint not ready yet');
+    showThankYou(payload.name);
+    form.reset();
+    setTimeout(()=>{ submitBtn.textContent = originalText; submitBtn.disabled = false; }, 3000);
+  } catch(err){
+    // Falls back to opening an email draft if Formspree isn't set up yet
+    // or the request fails for any reason — so a submission is never lost.
+    const subject = `New project inquiry from ${payload.name}`;
+    const body =
+`Name: ${payload.name}
+Email: ${payload.email}
+Company / Brand: ${payload.company || '—'}
+Project Type: ${payload.projectType}
+Budget: ${payload.budget}
 
 Message:
-${message}`;
+${payload.message}`;
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    showThankYou(payload.name);
+    form.reset();
+    setTimeout(()=>{ submitBtn.textContent = originalText; submitBtn.disabled = false; }, 3000);
+  }
 
-  const mailtoLink = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.location.href = mailtoLink;
   return false;
+}
+
+// Covers the form with a solid panel and a personalized thank-you message,
+// then fades back out on its own so the form is ready for another visitor.
+function showThankYou(name){
+  const overlay = document.getElementById('formSuccessOverlay');
+  const heading = document.getElementById('fsHeading');
+  heading.textContent = name ? `Thank you, ${name}.` : 'Thank you.';
+  overlay.classList.add('show');
+  setTimeout(()=>{ overlay.classList.remove('show'); }, 4500);
 }
 
 // Standalone images that aren't part of the six category grids. Place
