@@ -381,24 +381,46 @@ nav.primary-links a:hover::after{transform:scaleX(1);}
 .motion-card{
   position:relative;
   aspect-ratio:16/9;
-  background:linear-gradient(135deg, #1a1917, #0b0b0a);
+  background-color:#0b0b0a;
   border:1px solid var(--line);
-  display:flex; align-items:flex-end;
-  padding:22px;
   overflow:hidden;
+  cursor:pointer;
 }
-.motion-card .cat{
-  font-size:0.76rem; color:var(--gray); letter-spacing:0.02em;
+.motion-card img{
+  width:100%; height:100%; object-fit:cover; display:block;
+  transition:transform 700ms cubic-bezier(.2,.7,.2,1);
 }
+.motion-card:hover img{ transform:scale(1.045); }
+
+.motion-overlay{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; justify-content:flex-end;
+  padding:22px;
+  background:linear-gradient(180deg, rgba(10,10,10,0) 42%, rgba(10,10,10,0.85) 100%);
+  pointer-events:none;
+}
+.motion-overlay .cat{
+  font-size:0.76rem; color:var(--off-white); opacity:0.8; letter-spacing:0.02em; margin-bottom:6px;
+}
+.motion-overlay h3{
+  font-family:var(--serif); font-weight:400; font-size:1.2rem; color:var(--white); line-height:1.2;
+}
+
 .play-btn{
   position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
   width:58px; height:58px; border-radius:50%;
   border:1px solid var(--line-strong);
+  background:rgba(10,10,10,0.35);
   display:flex; align-items:center; justify-content:center;
-  transition:border-color 200ms ease, transform 200ms ease;
+  transition:border-color 200ms ease, transform 200ms ease, background-color 200ms ease;
 }
 .motion-card:hover .play-btn{border-color:var(--off-white); transform:translate(-50%,-50%) scale(1.06);}
 .play-btn svg{width:14px; height:14px; fill:var(--off-white); margin-left:2px;}
+
+.motion-card.playing{ cursor:default; }
+.motion-card iframe{
+  position:absolute; inset:0; width:100%; height:100%; border:0; display:block;
+}
 
 .motion-note{margin-top:28px; font-size:0.85rem; color:var(--gray-dim); max-width:60ch;}
 
@@ -585,6 +607,7 @@ footer .foot-copy{font-size:0.78rem; color:var(--gray-dim); width:100%; margin-t
   <a href="#top" class="brand-mark">Brandon<span>.</span></a>
   <nav class="primary-links">
     <a href="#work">Work</a>
+    <a href="#motion">Motion</a>
     <a href="#services">Services</a>
     <a href="#about">About</a>
     <a href="#contact">Contact</a>
@@ -598,6 +621,7 @@ footer .foot-copy{font-size:0.78rem; color:var(--gray-dim); width:100%; margin-t
 <div class="mobile-menu" id="mobileMenu">
   <button class="close-menu" id="closeMenu">Close</button>
   <a href="#work">Work</a>
+  <a href="#motion">Motion</a>
   <a href="#services">Services</a>
   <a href="#about">About</a>
   <a href="#contact">Contact</a>
@@ -640,20 +664,18 @@ footer .foot-copy{font-size:0.78rem; color:var(--gray-dim); width:100%; margin-t
 
   <div class="wrap"><div class="hairline"></div></div>
 
-  <!-- MOTION (disabled for now — no video content yet)
+  <!-- MOTION -->
   <section id="motion">
     <div class="wrap">
       <div class="section-head fade-up">
         <h2>Motion</h2>
-        <p>Selected video work across commercial, social, and event projects.</p>
+        <p>Selected video work across commercial and social content.</p>
       </div>
       <div class="motion-grid" id="motionGrid"></div>
-      <p class="motion-note">Full video reel launching soon — the slots above are reserved by project category and will link out to finished cuts as they're delivered.</p>
     </div>
   </section>
 
   <div class="wrap"><div class="hairline"></div></div>
-  -->
 
   <!-- SERVICES -->
   <section id="services">
@@ -920,11 +942,20 @@ async function buildImages(){
 }
 let IMAGES = [];
 
-const MOTION_SLOTS = [
-  { cat:'Commercial' },
-  { cat:'Social Media' },
-  { cat:'Fitness' },
-  { cat:'Events' },
+// Real video work. Each embeds via YouTube's privacy-enhanced player,
+// loaded only after a click (facade pattern) — fast initial page load,
+// and works consistently across Chrome, Firefox, Safari, and Edge.
+const VIDEOS = [
+  {
+    id: 'plFSLIPPxkQ',
+    title: 'CareBridge',
+    cat: 'Editing Showcase — Concept Piece',
+  },
+  {
+    id: 'vS9XiyCSzDk',
+    title: "Buddy's Fitness Gym",
+    cat: 'Fitness — Social Content',
+  },
 ];
 
 /* ============ TABS + GRID ============ */
@@ -974,12 +1005,33 @@ gridEl.style.transition = 'opacity 200ms ease';
 /* ============ MOTION GRID (only runs if the Motion section is enabled) ============ */
 const motionGrid = document.getElementById('motionGrid');
 if(motionGrid){
-  motionGrid.innerHTML = MOTION_SLOTS.map(s=>`
-    <div class="motion-card">
+  motionGrid.innerHTML = VIDEOS.map((v, i)=>`
+    <div class="motion-card" data-index="${i}" tabindex="0" role="button" aria-label="Play ${v.title}">
+      <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="${v.title} thumbnail" loading="lazy">
+      <div class="motion-overlay">
+        <span class="cat">${v.cat}</span>
+        <h3>${v.title}</h3>
+      </div>
       <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div>
-      <span class="cat">${s.cat}</span>
     </div>
   `).join('');
+
+  function playVideo(card){
+    if(card.classList.contains('playing')) return;
+    const video = VIDEOS[parseInt(card.dataset.index, 10)];
+    card.classList.add('playing');
+    card.innerHTML = `<iframe
+      src="https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1"
+      title="${video.title}"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen
+      loading="lazy"></iframe>`;
+  }
+
+  motionGrid.querySelectorAll('.motion-card').forEach(card=>{
+    card.addEventListener('click', ()=>playVideo(card));
+    card.addEventListener('keypress', e=>{ if(e.key==='Enter') playVideo(card); });
+  });
 }
 
 /* ============ LIGHTBOX ============ */
